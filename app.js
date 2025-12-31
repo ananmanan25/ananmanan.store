@@ -1,146 +1,68 @@
-var firebaseConfig = {
- apiKey: "AIzaSyDd8vDYrTN5vJDq1354fSqIc1Xng2-40nQ",
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDd8vDYrTN5vJDq1354fSqIc1Xng2-40nQ",
   authDomain: "ananmanan-store-cc2d3.firebaseapp.com",
   projectId: "ananmanan-store-cc2d3",
+  storageBucket: "ananmanan-store-cc2d3.firebasestorage.app",
+  messagingSenderId: "10923491414",
+  appId: "1:10923491414:web:a9dc65f35cf4fb0af73bf7",
+  measurementId: "G-M3MHCXXRHP"
 };
 
-firebase.initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-var auth = firebase.auth();
-var db = firebase.firestore();
-
-const products=[
- {id:1,name:"Black Sneaker",price:120,img:"https://images.unsplash.com/photo-1606813909255-c9f29aaacfd2"},
- {id:2,name:"White Classic",price:140,img:"https://images.unsplash.com/photo-1600185365483-26d7a4cc7519"},
- {id:3,name:"Street Runner",price:110,img:"https://images.unsplash.com/photo-1528701800489-20be0c8c3f59"}
+const products = [
+  { id:1, name:"Luxury Jacket", price:120 },
+  { id:2, name:"Premium Shirt", price:80 },
+  { id:3, name:"Designer Jeans", price:100 }
 ];
 
-const productBox=document.getElementById("products");
-const cartBox=document.getElementById("cart");
-let cart=[];
+let cart = [];
 
-products.forEach(p=>{
- productBox.innerHTML+=`
-  <div class="product">
-   <img src="${p.img}">
-   <h3>${p.name}</h3>
-   <p>$${p.price}</p>
-   <button onclick="addToCart(${p.id})">Add to Cart</button>
-  </div>
- `;
+const productBox = document.getElementById("products");
+
+products.forEach(p => {
+  const d = document.createElement("div");
+  d.className = "card";
+  d.innerHTML = `
+    <h3>${p.name}</h3>
+    <p>$${p.price}</p>
+    <button onclick="addToCart(${p.id})">Add</button>
+  `;
+  productBox.appendChild(d);
 });
 
-function toggleCart(){cartBox.classList.toggle("open")}
+window.addToCart = id => {
+  cart.push(products.find(p => p.id === id));
+  renderCart();
+};
 
-function addToCart(id){
- const p=products.find(x=>x.id===id);
- cart.push(p);
- renderCart();
+function renderCart() {
+  const c = document.getElementById("cart");
+  c.innerHTML = "";
+  cart.forEach(i => c.innerHTML += `${i.name} - $${i.price}<br>`);
 }
 
-function renderCart(){
- document.getElementById("cart-items").innerHTML="";
- let total=0;
- cart.forEach(p=>{
-  total+=p.price;
-  document.getElementById("cart-items").innerHTML+=`<p>${p.name} - $${p.price}</p>`;
- });
- document.getElementById("total").innerText=total;
- document.getElementById("cart-count").innerText=cart.length;
-}
+window.submitOrder = async method => {
+  const order = {
+    name: name.value,
+    email: email.value,
+    phone: phone.value,
+    address: address.value,
+    items: cart,
+    payment: method,
+    time: new Date().toISOString()
+  };
 
-function openCheckout(){document.getElementById("checkoutPage").style.display="flex"}
-function closeCheckout(){document.getElementById("checkoutPage").style.display="none"}
+  await addDoc(collection(db, "orders"), order);
+  alert("Order sent. Receipt will arrive by email.");
+  cart = [];
+  renderCart();
+};
 
-function placeOrder(){}
- const order={
-  name:name.value,
-  email:email.value,
-  phone:phone.value,
-  address:address.value,
-  payment:paymentMethod.value,
-  items:cart,
-  total:cart.reduce((s,p)=>s+p.price,0),
-  time:new Date().toLocaleString()
- };
-
- if(order.payment==="ONLINE"){
-   window.open("PASTE_YOUR_PAYMENT_LINK_HERE");
- }
-
-async function placeOrder() {
-
-  if (!auth.currentUser) {
-    alert("Please login first.");
-    return;
-  }
-
-  try {
-    const order = {
-      uid: auth.currentUser.uid,
-      customerName: document.getElementById("name").value,
-      email: document.getElementById("email").value,
-      phone: document.getElementById("phone").value,
-      address: document.getElementById("address").value,
-      payment: document.getElementById("paymentMethod").value,
-      items: cart,
-      total: cart.reduce((t, i) => t + i.price, 0),
-      status: "Pending",
-      createdAt: new Date().toISOString()
-    };
-
-    const ref = await db.collection("orders").add(order);
-
-    console.log("Order saved:", ref.id);
-
-    generateReceipt(order, ref.id);
-
-    cart = [];
-    renderCart();
-    closeCheckout();
-
-    if (order.payment === "ONLINE") {
-      window.open("PASTE_YOUR_PAYMENT_LINK_HERE");
-    }
-
-    alert("Order placed successfully!");
-
-  } catch (err) {
-    console.error(err);
-    alert("Order failed: " + err.message);
-  }
-}
-function generateReceipt(order, orderId) {
-  let text = `
-ANANMANAN OFFICIAL RECEIPT
-
-Order ID: ${orderId}
-Name: ${order.customerName}
-Email: ${order.email}
-Phone: ${order.phone}
-Address: ${order.address}
-
-Items:
-`;
-
-  order.items.forEach(i => {
-    text += `${i.name} — $${i.price}\n`;
-  });
-
-  text += `\nTotal: $${order.total}\nStatus: ${order.status}\n\nThank you for shopping with ANANMANAN`;
-
-  const blob = new Blob([text], { type: "text/plain" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = `receipt_${orderId}.txt`;
-  link.click();
-}
-
-
-function loginWithGoogle(){
- var provider=new firebase.auth.GoogleAuthProvider();
- auth.signInWithPopup(provider)
-  .then(res=>userEmail.innerText=res.user.email)
-  .catch(err=>alert(err.message));
-}
-
+window.payCard = () => {
+  window.location.href = "https://YOUR-PAYMENT-LINK-HERE";
+};
