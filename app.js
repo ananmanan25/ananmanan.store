@@ -52,7 +52,7 @@ function renderCart(){
 function openCheckout(){document.getElementById("checkoutPage").style.display="flex"}
 function closeCheckout(){document.getElementById("checkoutPage").style.display="none"}
 
-function placeOrder(){
+function placeOrder(){}
  const order={
   name:name.value,
   email:email.value,
@@ -68,23 +68,68 @@ function placeOrder(){
    window.open("PASTE_YOUR_PAYMENT_LINK_HERE");
  }
 
- db.collection("orders").add(order);
+function placeOrder(){
 
- showReceipt(order);
- cart=[];
- renderCart();
- closeCheckout();
+  if(!auth.currentUser){
+    alert("Please login before placing order.");
+    return;
+  }
+
+  const order={
+    uid: auth.currentUser.uid,
+    name:name.value,
+    email:email.value,
+    phone:phone.value,
+    address:address.value,
+    payment:paymentMethod.value,
+    items:cart,
+    total:cart.reduce((s,p)=>s+p.price,0),
+    time:new Date().toLocaleString(),
+    status:"Pending"
+  };
+
+  db.collection("orders").add(order)
+  .then(()=>{
+      console.log("Order saved");
+      showReceipt(order);
+      cart=[];
+      renderCart();
+      closeCheckout();
+  })
+  .catch(err=>{
+      alert("Order error: " + err.message);
+  });
+
+  if(order.payment==="ONLINE"){
+     window.open("PASTE_YOUR_PAYMENT_LINK_HERE");
+  }
 }
+
 
 function showReceipt(order){
  receipt.style.display="block";
  receipt.innerHTML=`
- <h3>Order Received</h3>
- <p>${order.name}</p>
+ <h3>ANANMANAN RECEIPT</h3>
+ <p>Name: ${order.name}</p>
+ <p>Email: ${order.email}</p>
  <p>Total: $${order.total}</p>
- <p>${order.payment}</p>
+ <p>Payment: ${order.payment}</p>
+ <button onclick='downloadReceipt(${JSON.stringify(order)})'>Download PDF</button>
  `;
 }
+function downloadReceipt(order){
+ const { jsPDF } = window.jspdf;
+ const doc = new jsPDF();
+
+ doc.text("ANANMANAN RECEIPT", 20, 20);
+ doc.text("Name: " + order.name, 20, 40);
+ doc.text("Email: " + order.email, 20, 50);
+ doc.text("Total: $" + order.total, 20, 60);
+ doc.text("Payment: " + order.payment, 20, 70);
+
+ doc.save("ananmanan-receipt.pdf");
+}
+
 
 function loginWithGoogle(){
  var provider=new firebase.auth.GoogleAuthProvider();
