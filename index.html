@@ -1,102 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
+<meta charset="UTF-8">
 <title>Luxury Clothing</title>
-<style>
-body{margin:0;font-family:Helvetica,Arial;background:#f5f5f5;color:#111}
-header{background:black;color:white;padding:20px;text-align:center}
-#products{display:flex;flex-wrap:wrap;justify-content:center;padding:20px}
-.card{background:white;width:230px;margin:12px;padding:15px;box-shadow:0 5px 15px rgba(0,0,0,.1)}
-.card h3{margin:0}
-button{background:black;color:white;border:none;padding:10px;width:100%;cursor:pointer;margin-top:10px}
-#checkout{max-width:700px;margin:auto;padding:20px}
-input{width:100%;padding:10px;margin:8px 0}
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
 <header>
-<h1>LUXURY CLOTHING</h1>
-<p>Wear the Confidence</p>
+  <h1>LUXURY CLOTHING</h1>
+  <p>Wear the Confidence</p>
 </header>
 
-<div id="products"></div>
+<section id="products"></section>
 
-<div id="checkout">
-<h2>Your Order</h2>
-<div id="cart"></div>
+<section id="checkout">
+  <h2>Your Order</h2>
+  <div id="cart"></div>
 
-<input id="name" placeholder="Full Name">
-<input id="email" placeholder="Email">
-<input id="phone" placeholder="Phone">
-<input id="address" placeholder="Delivery Address">
+  <input id="name" placeholder="Full Name">
+  <input id="email" placeholder="Email">
+  <input id="phone" placeholder="Phone">
+  <input id="address" placeholder="Delivery Address">
 
-<button onclick="submitOrder('COD')">Cash On Delivery</button>
-<button onclick="payCard()">Pay With Card</button>
-</div>
+  <button onclick="submitOrder('COD')">Cash On Delivery</button>
+  <button onclick="payCard()">Pay With Card</button>
+</section>
 
-<script type="module">
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-
-const firebaseConfig = {
- apiKey: "AIzaSyDd8vDYrTN5vJDq1354fSqIc1Xng2-40nQ",
-  authDomain: "ananmanan-store-cc2d3.firebaseapp.com",
-  projectId: "ananmanan-store-cc2d3",
-  storageBucket: "ananmanan-store-cc2d3.firebasestorage.app",
-  messagingSenderId: "10923491414",
-  appId: "1:10923491414:web:a9dc65f35cf4fb0af73bf7",
-  measurementId: "G-M3MHCXXRHP"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-const products = [
-  {id:1,name:"Luxury Jacket",price:120},
-  {id:2,name:"Premium Shirt",price:80},
-  {id:3,name:"Designer Jeans",price:100}
-];
-
-let cart = [];
-
-const productDiv = document.getElementById("products");
-
-products.forEach(p=>{
-  const d=document.createElement("div");
-  d.className="card";
-  d.innerHTML=`<h3>${p.name}</h3><p>$${p.price}</p><button onclick="add(${p.id})">Add</button>`;
-  productDiv.appendChild(d);
-});
-
-window.add = id=>{
-  cart.push(products.find(p=>p.id===id));
-  renderCart();
-};
-
-function renderCart(){
-  const c=document.getElementById("cart");
-  c.innerHTML="";
-  cart.forEach(i=>c.innerHTML+=`${i.name} - $${i.price}<br>`);
-}
-
-window.submitOrder = async method=>{
-  const order={
-    name:name.value,email:email.value,phone:phone.value,address:address.value,
-    items:cart,payment:method,time:new Date().toISOString()
-  };
-  await addDoc(collection(db,"orders"),order);
-  alert("Order sent. Receipt will arrive by email.");
-  cart=[];renderCart();
-};
-
-window.payCard=()=>{
-  window.location.href="https://YOUR-PAYMENT-LINK-HERE";
-};
-
-</script>
+<script type="module" src="app.js"></script>
 </body>
 </html>
