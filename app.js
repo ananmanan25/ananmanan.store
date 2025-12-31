@@ -68,66 +68,72 @@ function placeOrder(){}
    window.open("PASTE_YOUR_PAYMENT_LINK_HERE");
  }
 
-function placeOrder(){
+async function placeOrder() {
 
-  if(!auth.currentUser){
-    alert("Please login before placing order.");
+  if (!auth.currentUser) {
+    alert("Please login first.");
     return;
   }
 
-  const order={
-    uid: auth.currentUser.uid,
-    name:name.value,
-    email:email.value,
-    phone:phone.value,
-    address:address.value,
-    payment:paymentMethod.value,
-    items:cart,
-    total:cart.reduce((s,p)=>s+p.price,0),
-    time:new Date().toLocaleString(),
-    status:"Pending"
-  };
+  try {
+    const order = {
+      uid: auth.currentUser.uid,
+      customerName: document.getElementById("name").value,
+      email: document.getElementById("email").value,
+      phone: document.getElementById("phone").value,
+      address: document.getElementById("address").value,
+      payment: document.getElementById("paymentMethod").value,
+      items: cart,
+      total: cart.reduce((t, i) => t + i.price, 0),
+      status: "Pending",
+      createdAt: new Date().toISOString()
+    };
 
-  db.collection("orders").add(order)
-  .then(()=>{
-      console.log("Order saved");
-      showReceipt(order);
-      cart=[];
-      renderCart();
-      closeCheckout();
-  })
-  .catch(err=>{
-      alert("Order error: " + err.message);
-  });
+    const ref = await db.collection("orders").add(order);
 
-  if(order.payment==="ONLINE"){
-     window.open("PASTE_YOUR_PAYMENT_LINK_HERE");
+    console.log("Order saved:", ref.id);
+
+    generateReceipt(order, ref.id);
+
+    cart = [];
+    renderCart();
+    closeCheckout();
+
+    if (order.payment === "ONLINE") {
+      window.open("PASTE_YOUR_PAYMENT_LINK_HERE");
+    }
+
+    alert("Order placed successfully!");
+
+  } catch (err) {
+    console.error(err);
+    alert("Order failed: " + err.message);
   }
 }
+function generateReceipt(order, orderId) {
+  let text = `
+ANANMANAN OFFICIAL RECEIPT
 
+Order ID: ${orderId}
+Name: ${order.customerName}
+Email: ${order.email}
+Phone: ${order.phone}
+Address: ${order.address}
 
-function showReceipt(order){
- receipt.style.display="block";
- receipt.innerHTML=`
- <h3>ANANMANAN RECEIPT</h3>
- <p>Name: ${order.name}</p>
- <p>Email: ${order.email}</p>
- <p>Total: $${order.total}</p>
- <p>Payment: ${order.payment}</p>
- <button onclick='downloadReceipt(${JSON.stringify(order)})'>Download PDF</button>
- `;
-}
-function downloadReceipt(order){
- const { jsPDF } = window.jspdf;
- const doc = new jsPDF();
+Items:
+`;
 
- doc.text("ANANMANAN RECEIPT", 20, 20);
- doc.text("Name: " + order.name, 20, 40);
- doc.text("Email: " + order.email, 20, 50);
- doc.text("Total: $" + order.total, 20, 60);
- doc.text("Payment: " + order.payment, 20, 70);
+  order.items.forEach(i => {
+    text += `${i.name} — $${i.price}\n`;
+  });
 
- doc.save("ananmanan-receipt.pdf");
+  text += `\nTotal: $${order.total}\nStatus: ${order.status}\n\nThank you for shopping with ANANMANAN`;
+
+  const blob = new Blob([text], { type: "text/plain" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `receipt_${orderId}.txt`;
+  link.click();
 }
 
 
@@ -137,3 +143,4 @@ function loginWithGoogle(){
   .then(res=>userEmail.innerText=res.user.email)
   .catch(err=>alert(err.message));
 }
+
